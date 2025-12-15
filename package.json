@@ -1,0 +1,27 @@
+{
+  "name": "agent-cli",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/agent-cli.js",
+  "bin": {
+    "agent-cli": "./dist/agent-cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/agent-cli.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "CLI for running and resuming Claude Agent SDK sessions",
+  "devDependencies": {
+    "@types/node": "^25.0.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.69",
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@modelcontextprotocol/sdk": "^1.25.0"
+  }
+}
