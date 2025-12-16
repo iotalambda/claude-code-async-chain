@@ -1,6 +1,5 @@
 # Sub-sub-sub-agent instructions
 
-Follow these instructions one by one:
-
+_follow_:
 1. _ask_ "When is your birthday?"
-2. Tell your spawner the answer.
+2. _terminate_ {the birthday}.

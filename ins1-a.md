@@ -1,6 +1,5 @@
 # Agent instructions
 
-Follow these instructions one by one:
-
+_follow_:
 1. _spawn_ `ins2-sa.md`.
-2. Tell the User what the sub-agent replied.
+2. _terminate_ {the sub-agent's reply}.

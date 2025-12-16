@@ -4,8 +4,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { query, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
-const PENDING_MARKER = "PENDING";
-const RESUME_PROMPT = "RESUME";
+const PENDING_MARKER = "SGN_PENDING";
+const RESUME_PROMPT = "SGN_RESUME";
 const LOG_FILE = path.join(process.cwd(), "agent-cli.log");
 
 function log(message: string): void {
@@ -18,13 +18,16 @@ interface AgentResult {
   sessionId: string;
 }
 
-async function runAgent(prompt: string, sessionId?: string): Promise<AgentResult> {
+async function runAgent(
+  prompt: string,
+  sessionId?: string
+): Promise<AgentResult> {
   log(`Running agent: prompt="${prompt}", sessionId=${sessionId ?? "new"}`);
 
   const response = query({
     prompt,
     options: {
-      model: "claude-opus-4-5-20250929",
+      model: "claude-opus-4-5-20251101",
       cwd: process.cwd(),
       resume: sessionId,
       permissionMode: "bypassPermissions",
@@ -36,7 +39,11 @@ async function runAgent(prompt: string, sessionId?: string): Promise<AgentResult
   let newSessionId = sessionId ?? "";
 
   for await (const message of response) {
-    log(`Message: type=${message.type}, subtype=${(message as SDKMessage & { subtype?: string }).subtype}`);
+    log(
+      `Message: type=${message.type}, subtype=${
+        (message as SDKMessage & { subtype?: string }).subtype
+      }`
+    );
 
     if (message.type === "result") {
       if (message.subtype === "success") {
@@ -44,7 +51,9 @@ async function runAgent(prompt: string, sessionId?: string): Promise<AgentResult
         newSessionId = message.session_id ?? newSessionId;
         log(`Success: result="${result}", sessionId=${newSessionId}`);
       } else {
-        const errors = (message as SDKMessage & { errors?: string[] }).errors?.join(", ") ?? "unknown";
+        const errors =
+          (message as SDKMessage & { errors?: string[] }).errors?.join(", ") ??
+          "unknown";
         throw new Error(`Agent failed: ${errors}`);
       }
     }
@@ -55,7 +64,7 @@ async function runAgent(prompt: string, sessionId?: string): Promise<AgentResult
 
 function formatOutput(output: string, sessionId: string): string {
   if (output.includes(PENDING_MARKER) && sessionId) {
-    return output.replace(PENDING_MARKER, `${PENDING_MARKER} (${sessionId})`);
+    return `${PENDING_MARKER} (${sessionId})`;
   }
   return output;
 }
@@ -77,7 +86,10 @@ async function spawn(instructionFile: string): Promise<void> {
 async function resume(sessionId: string): Promise<void> {
   log(`=== RESUME: ${sessionId} ===`);
 
-  const { output, sessionId: newSessionId } = await runAgent(RESUME_PROMPT, sessionId);
+  const { output, sessionId: newSessionId } = await runAgent(
+    RESUME_PROMPT,
+    sessionId
+  );
   console.log(formatOutput(output, newSessionId));
 }
 

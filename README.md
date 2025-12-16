@@ -1,31 +1,41 @@
 # claude-code-async-chain
 
-An example of agent chaining with asynchronous human interaction using the Claude Agent SDK.
+An example of a sub-agent chain spawning convention that supports interweaving asynchronous steps (e.g. human input) within the process.
 
-Agents can spawn sub-agents and wait for their results. When an agent needs external input (like a human answer), it returns `PENDING` with a session ID. The entire chain pauses and can be resumed later.
+## How to use
 
-## Flow
+Start the process with `/cmd1-start`, answer the question in `question.md`, and resume the sub-agent chain with `/cmd2-resume`. If you attempt to resume before answering the question, no sub-agent will proceed further.
+
+## Structure
+
+The convention is defined in [CLAUDE.md](CLAUDE.md).
+
+The spawning process and messaging between agents uses `SGN_*` special marker words in messages, which are handled by the custom logic in [agent-cli.ts](src/agent-cli.ts).
+
+## Example flow
 
 ```
-agent-cli spawn ins1-a.md
-    → Agent 1 spawns Agent 2
-        → Agent 2 spawns Agent 3
-            → Agent 3 spawns Agent 4
-                → Agent 4 asks "When is your birthday?"
-                ← PENDING (session-4)
-            ← PENDING (session-3)
-        ← PENDING (session-2)
-    ← PENDING (session-1)
-
-[Human answers asynchronously in question.md]
-
-agent-cli resume session-1
-    → RESUME → Agent 1 runs: agent-cli resume session-2
-        → RESUME → Agent 2 runs: agent-cli resume session-3
-            → RESUME → Agent 3 runs: agent-cli resume session-4
-                → RESUME → Agent 4 reads answer
-                ← "January 1st"
-            ← "January 1st"
-        ← "January 1st"
-    ← "January 1st"
+User                  A                   SA                  SSA                 SSSA
+ │                    │                   │                   │                   │
+ │ /cmd1-start        │                   │                   │                   │
+ ├───────────────────>│ spawn ───────────>│ spawn ───────────>│ spawn ───────────>│ creates question.md
+ │                    │                   │                   │                   │
+ │<── SGN_PENDING ────│<── SGN_PENDING ───│<── SGN_PENDING ───│<── SGN_PENDING ───│
+ │                    │                   │                   │                   │
+ │ /cmd2-resume       │                   │                   │                   │
+ ├───────────────────>│ SGN_RESUME ──────>│ SGN_RESUME ──────>│ SGN_RESUME ──────>│ no answer yet
+ │                    │                   │                   │                   │
+ │<── SGN_PENDING ────│<── SGN_PENDING ───│<── SGN_PENDING ───│<── SGN_PENDING ───│
+ │                    │                   │                   │                   │
+ │ writes answer      │                   │                   │                   │
+ │                    │                   │                   │                   │
+ │ /cmd2-resume       │                   │                   │                   │
+ ├───────────────────>│ SGN_RESUME ──────>│ SGN_RESUME ──────>│ SGN_RESUME ──────>│ answer found!
+ │                    │                   │                   │                   │
+ │<─── "Jan 1st" ─────│<── "Jan 1st" ─────│<── "Jan 1st" ─────│<── "Jan 1st" ─────│
+ │                    │                   │                   │                   │
+ │ /cmd2-resume       │                   │                   │                   │
+ ├───────────────────>│ (already completed, returns previous reply)               │
+ │<─── "Jan 1st" ─────│                   │                   │                   │
+ │                    │                   │                   │                   │
 ```
