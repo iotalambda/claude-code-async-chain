@@ -24,12 +24,12 @@ User                        A                        SA                       SS
  │ /cmd1-start              │                        │                        │                        │
  ├─────────────────────────>│ spawn ────────────────>│ spawn ────────────────>│ spawn ────────────────>│ creates question.md
  │                          │                        │                        │                        │
- │<── SGN_PENDING_STARTED ──│<── SGN_PENDING_STARTED │<── SGN_PENDING_STARTED │<── SGN_PENDING_STARTED │
+ │<── SGN_PEND_STARTED ──│<── SGN_PEND_STARTED │<── SGN_PEND_STARTED │<── SGN_PEND_STARTED │
  │                          │                        │                        │                        │
  │ /cmd2-resume             │                        │                        │                        │
  ├─────────────────────────>│ SGN_RESUME ───────────>│ SGN_RESUME ───────────>│ SGN_RESUME ───────────>│ no answer yet
  │                          │                        │                        │                        │
- │<─── SGN_STILL_PENDING ───│<─── SGN_STILL_PENDING ─│<─── SGN_STILL_PENDING ─│<─── SGN_STILL_PENDING ─│
+ │<─── SGN_PEND_ONGOING ───│<─── SGN_PEND_ONGOING ─│<─── SGN_PEND_ONGOING ─│<─── SGN_PEND_ONGOING ─│
  │                          │                        │                        │                        │
  │ writes answer            │                        │                        │                        │
  │                          │                        │                        │                        │

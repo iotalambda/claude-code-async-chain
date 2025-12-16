@@ -4,8 +4,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { query, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
-const PENDING_STARTED = "SGN_PENDING_STARTED";
-const STILL_PENDING = "SGN_STILL_PENDING";
+const PEND_STARTED = "SGN_PEND_STARTED";
+const PEND_ONGOING = "SGN_PEND_ONGOING";
 const RESUME_PROMPT = "SGN_RESUME";
 const LOG_FILE = path.join(process.cwd(), "agent-cli.log");
 
@@ -29,7 +29,11 @@ async function runAgent(
   options: RunOptions = {}
 ): Promise<AgentResult> {
   const { fork = false } = options;
-  log(`Running agent: prompt="${prompt}", sessionId=${sessionId ?? "new"}, fork=${fork}`);
+  log(
+    `Running agent: prompt="${prompt}", sessionId=${
+      sessionId ?? "new"
+    }, fork=${fork}`
+  );
 
   const response = query({
     prompt,
@@ -71,15 +75,15 @@ async function runAgent(
 }
 
 function formatOutput(output: string, sessionId: string): string {
-  // SGN_STILL_PENDING: pass through as-is, no session ID attached
+  // SGN_PEND_ONGOING: pass through as-is, no session ID attached
   // This allows the caller to keep using the original (non-forked) session ID
-  if (output.includes(STILL_PENDING)) {
-    return STILL_PENDING;
+  if (output.includes(PEND_ONGOING)) {
+    return PEND_ONGOING;
   }
-  // SGN_PENDING_STARTED: attach session ID (forked or original)
+  // SGN_PEND_STARTED: attach session ID (forked or original)
   // This establishes a new checkpoint
-  if (output.includes(PENDING_STARTED) && sessionId) {
-    return `${PENDING_STARTED} (${sessionId})`;
+  if (output.includes(PEND_STARTED) && sessionId) {
+    return `${PEND_STARTED} (${sessionId})`;
   }
   return output;
 }
