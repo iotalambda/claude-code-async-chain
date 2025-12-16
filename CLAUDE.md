@@ -26,7 +26,7 @@
 ## Actions
 | Keyword | Action |
 |---------|--------|
-| `_ask_ "{q}"` | Create `$PWD/question.md` with `Q: {q}\nA:`, then _terminate_ "SGN_PENDING" |
+| `_ask_ "{q}"` | Create `$PWD/question.md` with `Q: {q}\nA:`, then _terminate_ "SGN_PENDING_STARTED" |
 | `_remember_ {fact}` | Persist {fact} across conversation compaction |
 | `_run_ \`{cmd}\`` | Execute {cmd} via Bash |
 | `_spawn_ \`{f}.md\`` | _run_ `$PWD/agent-cli spawn $PWD/{f}.md` |
@@ -34,14 +34,17 @@
 
 # Standard Operating Procedure (SOP)
 
-## _if_ _subreplied_ like "SGN_PENDING ({id})", _then_ _follow_:
-1) _remember_ sub-agent's session id is "{id}",
-2) _terminate_ "SGN_PENDING".
+## _if_ _subreplied_ like "SGN_PENDING_STARTED ({id})", _then_ _follow_:
+1) _remember_ SUB_AGENT_SESSION_ID="{id}",
+2) _terminate_ "SGN_PENDING_STARTED".
+
+## _if_ _subreplied_ like "SGN_STILL_PENDING", _then_:
+_terminate_ "SGN_STILL_PENDING".
 
 ## _if_ _resumed_ like "SGN_RESUME", _then_:
-- _if_ _repliedpreviously_ (like "{prev}" AND not like "SGN_PENDING{*}"), _then_ _terminate_ "{prev}",
-- _elif_ _subrepliedpreviously_ like "SGN_PENDING ({id})", _then_ _run_ `$PWD/agent-cli resume {id}`,
+- _if_ _repliedpreviously_ (like "{prev}" AND not like "SGN_PENDING_STARTED{*}" AND not like "SGN_STILL_PENDING"), _then_ _terminate_ "{prev}",
+- _elif_ _subrepliedpreviously_ (like "SGN_PENDING_STARTED{*}" OR like "SGN_STILL_PENDING"), _then_ _run_ `$PWD/agent-cli resume {SUB_AGENT_SESSION_ID}`,
 - _elif_ _instructedpreviously_ like "_ask_{*}", _then_:
     - _if_ answer exists in question.md, _then_ _terminate_ "{answer}",
-    - _else_ _terminate_ "SGN_PENDING".
+    - _else_ _terminate_ "SGN_STILL_PENDING".
 - _else_ _terminate_ "SGN_UNHANDLED".

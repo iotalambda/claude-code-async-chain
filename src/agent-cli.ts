@@ -4,7 +4,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { query, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
-const PENDING_MARKER = "SGN_PENDING";
+const PENDING_STARTED = "SGN_PENDING_STARTED";
+const STILL_PENDING = "SGN_STILL_PENDING";
 const RESUME_PROMPT = "SGN_RESUME";
 const LOG_FILE = path.join(process.cwd(), "agent-cli.log");
 
@@ -18,11 +19,17 @@ interface AgentResult {
   sessionId: string;
 }
 
+interface RunOptions {
+  fork?: boolean;
+}
+
 async function runAgent(
   prompt: string,
-  sessionId?: string
+  sessionId?: string,
+  options: RunOptions = {}
 ): Promise<AgentResult> {
-  log(`Running agent: prompt="${prompt}", sessionId=${sessionId ?? "new"}`);
+  const { fork = false } = options;
+  log(`Running agent: prompt="${prompt}", sessionId=${sessionId ?? "new"}, fork=${fork}`);
 
   const response = query({
     prompt,
@@ -30,6 +37,7 @@ async function runAgent(
       model: "claude-opus-4-5-20251101",
       cwd: process.cwd(),
       resume: sessionId,
+      forkSession: fork,
       permissionMode: "bypassPermissions",
       settingSources: ["project"],
     },
@@ -63,8 +71,15 @@ async function runAgent(
 }
 
 function formatOutput(output: string, sessionId: string): string {
-  if (output.includes(PENDING_MARKER) && sessionId) {
-    return `${PENDING_MARKER} (${sessionId})`;
+  // SGN_STILL_PENDING: pass through as-is, no session ID attached
+  // This allows the caller to keep using the original (non-forked) session ID
+  if (output.includes(STILL_PENDING)) {
+    return STILL_PENDING;
+  }
+  // SGN_PENDING_STARTED: attach session ID (forked or original)
+  // This establishes a new checkpoint
+  if (output.includes(PENDING_STARTED) && sessionId) {
+    return `${PENDING_STARTED} (${sessionId})`;
   }
   return output;
 }
@@ -84,13 +99,17 @@ async function spawn(instructionFile: string): Promise<void> {
 }
 
 async function resume(sessionId: string): Promise<void> {
-  log(`=== RESUME: ${sessionId} ===`);
+  log(`=== RESUME (fork): ${sessionId} ===`);
 
-  const { output, sessionId: newSessionId } = await runAgent(
+  // Always fork when resuming - this creates a disposable session
+  // If still pending, the fork is orphaned and original session ID preserved
+  // If progress is made, the forked session becomes the new checkpoint
+  const { output, sessionId: forkedSessionId } = await runAgent(
     RESUME_PROMPT,
-    sessionId
+    sessionId,
+    { fork: true }
   );
-  console.log(formatOutput(output, newSessionId));
+  console.log(formatOutput(output, forkedSessionId));
 }
 
 function printUsage(): void {
